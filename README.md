@@ -19,8 +19,8 @@ gmm-mcmc/
 ### 1. Creating the environment
 First of all, clone the repository and create a virtual environment by running the following commands,
 ```bash
-git clone https://github.com/MATH-517/project-kalil_alex_emanuel
-cd project-kalil_alex_emanuel
+git clone https://github.com/alexcaldarone/gmm-mcmc.git
+cd gmm-mcmc 
 python3 -m venv venv
 ```
 
