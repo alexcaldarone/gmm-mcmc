@@ -65,6 +65,3 @@ If you need extra help on how to manage the command line options, run
 ```bash
 python3 main.py --help
 ```
-
-
-## Member Contributions
