@@ -14,18 +14,23 @@ from .gibbs_sampler import (
 
 def step_selector(
         sampler: str,
-        sampler_params: Dict
+        sampler_params: Dict,
+        model: pm.Model
     ) -> Union[Callable, Model]:
     if sampler == 'Metropolis':
         # default proposal distribution is Normal
         step = pm.Metropolis
     elif sampler == 'HMC':
         step = pm.HamiltonianMC
-    elif sampler == "Gibbs":
-        step = UnivariateGibbsSampler
+    elif sampler == "NUTS":
+        step = pm.NUTS
     else:
         raise ValueError("Invalid sampler type")
-    return step
+    
+    if not sampler_params:
+        return step()
+    
+    return step(**{k: v for k, v in sampler_params.items() if v is not None})
 
 def generator_selector(
         type_of_generator: str
