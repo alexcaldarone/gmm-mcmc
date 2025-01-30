@@ -47,7 +47,7 @@ class MultivariateGMMParameters:
     n_components: int
     dimension: int
     means: List[List[float]]
-    covariance_matrices: List[List[List[float]]]
+    covariance_matrix: List[List[float]]
     weights: List[float]
     # do i include the dimenson in the parameters?
     def __post_init__(self):
@@ -70,20 +70,15 @@ class MultivariateGMMParameters:
             raise ValueError("The sum of weights must be equal to 1")
         self.weights = np.array(self.weights)
 
-        if not isinstance(self.covariance_matrices, list):
-            raise TypeError("Covariance matrices must be a list of numpy arrays")
-        if len(self.covariance_matrices) != self.n_components:
-            raise ValueError("The number of covariance matrices must match the number of components")
-        for cov in self.covariance_matrices:
-            #if not isinstance(cov, np.ndarray):
-            #    raise TypeError("Each covariance matrix must be a numpy array")
-            if (len(cov[0]), len(cov[1])) != (self.dimension, self.dimension):
-                raise ValueError("Each covariance matrix must be of shape (dimension, dimension)")
+        if not isinstance(self.covariance_matrix, list):
+            raise TypeError("Covariance matrices must be a list")
+        if (len(self.covariance_matrix[0]), len(self.covariance_matrix[1])) != (self.dimension, self.dimension):
+            raise ValueError("Each covariance matrix must be of shape (dimension, dimension)")
             #if not np.allclose(cov, cov.T):
             #    raise ValueError("Covariance matrices must be symmetric")
             #if np.linalg.det(cov) <= 0:
             #    raise ValueError("Covariance matrices must be positive-definite")
-        self.covariance_matrices = np.array(self.covariance_matrices)
+        self.covariance_matrix = np.array(self.covariance_matrix)
 
 @dataclass
 class MultivariateGMMPriorParameters:

@@ -35,7 +35,6 @@ class MultivariateGaussianMixtureGenerator:
                 )
         
         means = self.params.means[component_indices]
-        covs = self.params.covariance_matrices[component_indices]
 
-        data = np.array([np.random.multivariate_normal(mean=means[i], cov=covs[i]) for i in range(self.params.n_samples)])
+        data = np.array([np.random.multivariate_normal(mean=means[i], cov=self.params.covariance_matrix) for i in range(self.params.n_samples)])
         return data

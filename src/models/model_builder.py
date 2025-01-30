@@ -42,12 +42,13 @@ def build_model(model_type: str,
             mu0 = pm.MvNormal("mu0", mu=prior_params.mu0_mean, cov=prior_params.mu0_std, shape=(prior_params.dimension,)) # have to add shape?
 
             # Priors for component means and variances
-            mu_k_raw = pm.MvNormal("mu_k", mu = mu0, cov = prior_params.muk_variance, shape = (gmm_params.n_components, gmm_params.dimension))
+            mu_k_raw = pm.MvNormal("mu_k_raw", mu = mu0, cov = prior_params.muk_variance, shape = (gmm_params.n_components, gmm_params.dimension))
             mu_k = pm.Deterministic("mu_k", mu_k_raw)
-                        
-            packed_chol = pm.LKJCholeskyCov("packed_chol", n=prior_params.dimension, eta=1, sd_dist=pm.HalfNormal.dist(2), 
-                                            compute_corr=False)
-            sigma_k = pm.expand_packed_triangular(prior_params.dimension, packed_chol, lower = False)
+
+            packed_chol = pm.LKJCholeskyCov("packed_chol", n=prior_params.dimension, eta=1, sd_dist=pm.Exponential.dist(1.0), 
+                                            compute_corr=False, transform=None)
+            chol = pm.expand_packed_triangular(prior_params.dimension, packed_chol, lower = True)
+            sigma_k = pm.Deterministic("Sigma", chol @ chol.T)
             
             # Define component distributions
             components = pm.MvNormal.dist(mu = mu_k, cov = sigma_k, shape = (gmm_params.n_components, gmm_params.dimension))
