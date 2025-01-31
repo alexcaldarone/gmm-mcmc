@@ -27,7 +27,10 @@ from src.utils.gmm_parameters import (
 
 from src.models.model_builder import build_model
 
-from src.utils.gibbs_sampler import UnivariateGibbsSampler
+from src.utils.gibbs_sampler import (
+    UnivariateGibbsSampler,
+    MultivariateGibbsSampler
+)
 
 warnings.filterwarnings("ignore")
 
@@ -36,7 +39,7 @@ parser.add_argument('--type', choices=['univariate', 'multivariate'],
                     default='univariate', help='Type of simulation: univariate or multivariate')
 parser.add_argument(
     '--sampler',
-    choices=['Metropolis', 'HMC', 'Gibbs'],
+    choices=['Metropolis', 'HMC', 'Gibbs', 'NUTS'],
     default='Metropolis',
     help='Type of sampler to use')
 
@@ -56,7 +59,6 @@ if __name__ == "__main__":
     sampler = args.sampler
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    #results_dir = f"results_{timestamp}"
     
     with open('configs/experiment_params.json') as f:
         experiment_params = json.load(f)
@@ -68,7 +70,7 @@ if __name__ == "__main__":
         prior_params_dict = json.load(f)
     
     prior_params = from_dict(data_class = prior_dataclass_dict[experiment_type],
-                                    data = prior_params_dict[experiment_type])
+                             data = prior_params_dict[experiment_type])
     
     traceplot_dir = f"results/{timestamp}/figures"
     summary_stats_dir = f"results/{timestamp}/data"
@@ -84,7 +86,7 @@ if __name__ == "__main__":
         generator_distribtuion = generator_selector(experiment_type)
         data_generator = generator_distribtuion(simulation_gmm_params)
         sample = data_generator.generate()
-
+        
         # build the model
         model = build_model(
             experiment_type,
@@ -92,31 +94,41 @@ if __name__ == "__main__":
             prior_params,
             simulation_gmm_params
         )
-        print(model)
-        # sampler selection
-        step_method = step_selector(sampler, sampler_params[sampler])
-
-        # very ugly
-        if sampler == "Gibbs":
-            value_vars = get_value_vars_from_user_vars([model.mu0, model.mu_k, model.sigma_k], model)
-            step_method = UnivariateGibbsSampler(
-                vars = value_vars,
-                model = model,
-                y = sample,
-                pi = simulation_gmm_params.weights,
-                theta = prior_params.mu0_mean,
-                nu = prior_params.mu0_std,
-                tau2 = prior_params.muk_variance,
-                alpha0 = prior_params.sigma0_alpha,
-                beta0 = prior_params.sigma0_beta
-            )
 
         # sample from the model
         with model:
-            if sampler == "Gibbs":
-                trace = pm.sample(10000, tune = 1000, chains = 4, step=step_method)
+            if sampler == 'Gibbs' and experiment_type == 'univariate':
+                value_vars = get_value_vars_from_user_vars([model.mu0, model.mu_k_raw, model.sigma_k], model)
+                step_method = UnivariateGibbsSampler(
+                    vars=value_vars,
+                    model=model,
+                    y=sample,
+                    pi=simulation_gmm_params.weights,
+                    theta=prior_params.mu0_mean,
+                    nu=prior_params.mu0_std,
+                    tau2=prior_params.muk_variance,
+                    alpha0=prior_params.sigma0_alpha,
+                    beta0=prior_params.sigma0_beta
+
+                )
+            elif sampler == 'Gibbs' and experiment_type == 'multivariate':
+                value_vars = get_value_vars_from_user_vars([model.mu0, model.mu_k_raw, model.packed_chol], model)
+                step_method = MultivariateGibbsSampler(
+                    vars=value_vars,
+                    model=model,
+                    y=sample,
+                    pi=simulation_gmm_params.weights,
+                    prior_vars=prior_params.muk_variance,
+                    hyperprior_mean=prior_params.mu0_mean,
+                    hyperprior_vars=prior_params.mu0_std
+                )
             else:
-                trace = pm.sample(1000, tune = 1000, chains = 4, step=step_method())
+                step_method = step_selector(sampler, sampler_params[sampler], model)
+            
+            start_vals = {"packed_chol": np.eye(simulation_gmm_params.dimension)[np.tril_indices(simulation_gmm_params.dimension)]} \
+                if experiment_type == "multivariate" else {}
+            print(start_vals)
+            trace = pm.sample(10000, tune = 1000, chains = 4, step=step_method, initvals=start_vals)
         
         # plot the results
         axes = az.plot_trace(trace)

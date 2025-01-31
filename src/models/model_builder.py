@@ -43,7 +43,7 @@ def build_model(model_type: str,
 
             # Priors for component means and variances
             mu_k_raw = pm.MvNormal("mu_k_raw", mu = mu0, cov = prior_params.muk_variance, shape = (gmm_params.n_components, gmm_params.dimension))
-            mu_k = pm.Deterministic("mu_k", mu_k_raw)
+            mu_k = pm.Deterministic("mu_k", pt.sort(mu_k_raw))
 
             packed_chol = pm.LKJCholeskyCov("packed_chol", n=prior_params.dimension, eta=1, sd_dist=pm.Exponential.dist(1.0), 
                                             compute_corr=False, transform=None)

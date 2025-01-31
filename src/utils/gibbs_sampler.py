@@ -32,7 +32,7 @@ class UnivariateGibbsSampler(BlockedStep):
     def step(self, 
              point: Dict[str, Union[float, np.ndarray]]) -> Union[Dict[str, np.ndarray], List]:
         mu0_current = point['mu0']
-        mu_current = point['mu_k']
+        mu_current = point['mu_k_raw']
         sigma2_current = point['sigma_k']
 
         z_new = self._step_z(mu_current, sigma2_current)
@@ -42,7 +42,7 @@ class UnivariateGibbsSampler(BlockedStep):
         
         new_point = point.copy()
         new_point['mu0'] = mu0_new
-        new_point['mu_k'] = mu_new
+        new_point['mu_k_raw'] = mu_new
         new_point['sigma_k'] = sigma2_new
         return new_point, []
 
@@ -134,7 +134,7 @@ class MultivariateGibbsSampler(BlockedStep):
         #print(point)
         mu0_current = point['mu0']
         mu_current = point['mu_k_raw']
-        print("packed chol (inside step)", point['packed_chol'])
+        #print("packed chol (inside step)", point['packed_chol'])
         sigma2_current = self._expand_packed_chol(point['packed_chol'])
         #print("old packed chol", point['packed_chol'])
         #print(sigma2_current)
@@ -159,22 +159,30 @@ class MultivariateGibbsSampler(BlockedStep):
         K = self.n_components
         P = self.dimension
         #print("Y: \n", self.y)
-        probs = np.zeros((N, K))
+        log_probs = np.zeros((N, K))
         #print("at beginnning: \n", probs)
+        eigs = np.linalg.eigvals(sigma2)
+        print("sigma2 eignevalues", eigs)
         for k in range(K):
             #print("inside loop", mu[k], "sigma", sigma2[k])
             # il problema è sigma
             # lo devo mettere in una lista di array
             #print(multivariate_normal.pdf(self.y, mean=mu[k], cov=sigma2[k]))
-            probs[:, k] = self.pi[k] * multivariate_normal.pdf(self.y, mean=mu[k], cov=sigma2)
+            #print("covarianca", sigma2)
+            log_probs[:, k] = np.log(self.pi[k]) + multivariate_normal.logpdf(self.y, mean=mu[k], cov=sigma2) # this is giving always zero probabilities
+            print("probs[:k]", log_probs[:, k])
         
         #print("probs (before sum)", probs)
-        probs_sum = probs.sum(axis=1, keepdims=True)
+        #probs_sum = probs.sum(axis=1, keepdims=True)
+        #probs_sum[probs_sum == 0] = 1e-16
         #print("probs_sum", probs_sum)
-        probs /= (probs_sum + 1e-16)
+        #probs /= probs_sum
+        probs = np.exp(log_probs - log_probs.max(axis=1, keepdims=True))
+        probs /= probs.sum(axis=1, keepdims=True)
         # error is caused when all of the probs are 0
         #print("probs", probs)
         #print("probs", probs.shape)
+        # error now comes from the fact that the probabilities are all zero, so they dont sum to 1
         z_new = np.array([np.random.multinomial(1, probs[i, :]).argmax() for i in range(N)])
 
         return z_new
@@ -210,7 +218,7 @@ class MultivariateGibbsSampler(BlockedStep):
         #    S_post = invwishart.rvs(df = N_k + self.dimension + 1, scale = S_k)
         #    sigma[component] = S_post
         S_k = np.cov(self.y, rowvar=False)
-        S_post = invwishart.rvs(df=self.n_samples + self.dimension + 1, scale=S_k)
+        S_post = invwishart.rvs(df=self.n_samples + self.dimension + 1 + 5, scale=S_k + 1e-6 * np.eye(self.dimension)) # 5 is to regularize
         return S_post
     
     def _step_mu_0(self, mu_current):
@@ -222,8 +230,8 @@ class MultivariateGibbsSampler(BlockedStep):
         return mu0
     
     def _expand_packed_chol(self, packed_chol: np.ndarray) -> np.ndarray:
-        print("--- INSIDE _expand_packed_chol ---")
-        print("packed_chol:", packed_chol)
+        #print("--- INSIDE _expand_packed_chol ---")
+        #print("packed_chol:", packed_chol)
 
         D = self.dimension
         n_elem_per_cov = D * (D + 1) // 2
@@ -240,7 +248,7 @@ class MultivariateGibbsSampler(BlockedStep):
         idx = np.tril_indices(D)  # Indices for lower triangular part
         chol_matrix[idx] = packed_chol  # Fill only lower triangular part
 
-        print("Expanded chol_matrix:", chol_matrix)
+        #print("Expanded chol_matrix:", chol_matrix)
         
         return chol_matrix
     
