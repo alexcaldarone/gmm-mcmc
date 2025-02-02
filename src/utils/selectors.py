@@ -4,8 +4,7 @@ import pymc as pm
 from pymc import Model
 
 from src.generators.mixture_generator import (
-    UnivariateGaussianMixtureGenerator,
-    MultivariateGaussianMixtureGenerator
+    UnivariateGaussianMixtureGenerator
 )
 
 from .gibbs_sampler import (
@@ -17,6 +16,7 @@ def step_selector(
         sampler_params: Dict,
         model: pm.Model
     ) -> Union[Callable, Model]:
+    print("sampler selected:", sampler)
     if sampler == 'Metropolis':
         # default proposal distribution is Normal
         step = pm.Metropolis
@@ -37,8 +37,6 @@ def generator_selector(
     ) -> Callable:
     if type_of_generator == 'univariate':
         generator = UnivariateGaussianMixtureGenerator
-    elif type_of_generator == 'multivariate':
-        generator = MultivariateGaussianMixtureGenerator
     else:
         raise ValueError("Invalid generator type")
     return generator

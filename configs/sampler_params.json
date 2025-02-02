@@ -1,5 +1,5 @@
 {
     "Metropolis": {},
     "HMC": {},
-    "Gibbs": {}
+    "NUTS": {}
 }

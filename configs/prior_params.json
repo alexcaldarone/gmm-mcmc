@@ -5,11 +5,5 @@
         "sigma0_alpha": 1,
         "sigma0_beta": 1,
         "muk_variance": 1
-    },
-    "multivariate": {
-        "dimension": 2,
-        "mu0_mean": [0, 0],
-        "mu0_std": [[1, 0], [0, 1]],
-        "muk_variance": [[1, 0], [0, 1]]
     }
 }
