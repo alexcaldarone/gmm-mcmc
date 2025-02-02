@@ -1,0 +1,15 @@
+# .flake8
+[flake8]
+# Maximum line length before warning (for line-break checks).
+max-line-length = 88
+
+# Ignore specific rules by code (example codes below).
+ignore = E501, W503
+
+# List of directories or files to exclude from linting.
+exclude = 
+    .git,
+    __pycache__,
+    build,
+    dist,
+    venv
