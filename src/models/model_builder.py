@@ -10,8 +10,23 @@ from src.utils.gmm_parameters import (
 
 def build_model(model_type: str, 
                 sample: np.ndarray,
-                prior_params: Union[UnivariateGMMPriorParameters],
-                gmm_params: Union[UnivariateGMMParameters]) -> pm.Model:
+                prior_params: UnivariateGMMPriorParameters,
+                gmm_params: UnivariateGMMParameters) -> pm.Model:
+    """
+    Build a probabilistic model for Gaussian Mixture Model (GMM) based on the given parameters.
+
+    Parameters:
+    model_type (str): The type of the model. Choose between 'univariate' and 'multivariate'.
+    sample (np.ndarray): The observed data sample.
+    prior_params (UnivariateGMMPriorParameters): The prior parameters for the GMM.
+    gmm_params (UnivariateGMMParameters): The parameters for the GMM.
+
+    Returns:
+    pm.Model: The built probabilistic model.
+
+    Raises:
+    ValueError: If an invalid model type is provided.
+    """
     if model_type not in ["univariate"]:
         raise ValueError("Invalid model type.")
 

@@ -3,7 +3,7 @@ from typing import List, Dict, Union, NoReturn
 import numpy as np
 from pymc import Model
 from pymc.step_methods.arraystep import BlockedStep
-from scipy.stats import norm, multivariate_normal, invwishart
+from scipy.stats import norm
 
 class UnivariateGibbsSampler(BlockedStep):
     def __init__(
@@ -17,6 +17,20 @@ class UnivariateGibbsSampler(BlockedStep):
             tau2: float,
             alpha0: float,
             beta0: float) -> NoReturn:
+        """
+        Initialize the UnivariateGibbsSampler.
+
+        Args:
+            vars (List[str]): List of variable names.
+            model (Model, optional): The model. Defaults to None.
+            y (np.ndarray, optional): The observed data. Defaults to None.
+            pi (np.ndarray, optional): The mixture weights. Defaults to None.
+            theta (float, optional): Hyperparameter for mu0. Defaults to None.
+            nu (float, optional): Hyperparameter for mu0. Defaults to None.
+            tau2 (float, optional): Hyperparameter for mu0. Defaults to None.
+            alpha0 (float, optional): Hyperparameter for sigma2. Defaults to None.
+            beta0 (float, optional): Hyperparameter for sigma2. Defaults to None.
+        """
         super().__init__()
         self.y = y
         self.pi = pi
@@ -31,6 +45,15 @@ class UnivariateGibbsSampler(BlockedStep):
 
     def step(self, 
              point: Dict[str, Union[float, np.ndarray]]) -> Union[Dict[str, np.ndarray], List]:
+        """
+        Perform a Gibbs sampling step.
+
+        Args:
+            point (Dict[str, Union[float, np.ndarray]]): Current parameter values.
+
+        Returns:
+            Union[Dict[str, np.ndarray], List]: Updated parameter values and empty list.
+        """
         mu0_current = point['mu0']
         mu_current = point['mu_k_raw']
         sigma2_current = point['sigma_k']
@@ -52,6 +75,19 @@ class UnivariateGibbsSampler(BlockedStep):
                    sigma2: np.ndarray,
                    z: np.ndarray,
                    tau2: np.ndarray) -> np.ndarray:
+        """
+        Perform a Gibbs sampling step for updating mu_k.
+
+        Args:
+            mu0 (np.ndarray): Current value of mu0.
+            mu (np.ndarray): Current value of mu_k.
+            sigma2 (np.ndarray): Current value of sigma_k.
+            z (np.ndarray): Current value of z.
+            tau2 (np.ndarray): Current value of tau2.
+
+        Returns:
+            np.ndarray: Updated value of mu_k.
+        """
         K = self.n_components
 
         for component in range(K):
@@ -67,6 +103,17 @@ class UnivariateGibbsSampler(BlockedStep):
                       mu: np.ndarray,
                       sigma2: np.ndarray,
                       z: np.ndarray) -> np.ndarray:
+        """
+        Perform a Gibbs sampling step for updating sigma_k.
+
+        Args:
+            mu (np.ndarray): Current value of mu_k.
+            sigma2 (np.ndarray): Current value of sigma_k.
+            z (np.ndarray): Current value of z.
+
+        Returns:
+            np.ndarray: Updated value of sigma_k.
+        """
         K = self.n_components
         
         for component in range(K):
@@ -82,6 +129,16 @@ class UnivariateGibbsSampler(BlockedStep):
     def _step_mu_0(self,
                    mu0: np.ndarray,
                    mu: np.ndarray) -> np.ndarray:
+        """
+        Perform a Gibbs sampling step for updating mu0.
+
+        Args:
+            mu0 (np.ndarray): Current value of mu0.
+            mu (np.ndarray): Current value of mu_k.
+
+        Returns:
+            np.ndarray: Updated value of mu0.
+        """
         K = self.n_components
         var_post = 1/(K/self.tau2 + 1/self.nu)
         mean_post = var_post * (self.theta/self.nu + mu.sum()/self.tau2)
@@ -91,6 +148,16 @@ class UnivariateGibbsSampler(BlockedStep):
     def _step_z(self,
                 mu: np.ndarray,
                 sigma2: np.ndarray) -> np.ndarray:
+        """
+        Perform a Gibbs sampling step for updating z.
+
+        Args:
+            mu (np.ndarray): Current value of mu_k.
+            sigma2 (np.ndarray): Current value of sigma_k.
+
+        Returns:
+            np.ndarray: Updated value of z.
+        """
         N = self.n_samples
         K = self.n_components
         

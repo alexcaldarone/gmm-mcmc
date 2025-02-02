@@ -4,6 +4,19 @@ import numpy as np
 
 @dataclass
 class UnivariateGMMParameters:
+    """
+    Class representing the parameters of a univariate Gaussian Mixture Model (GMM).
+
+    Attributes:
+        n_samples (int): The number of samples in the dataset.
+        n_components (int): The number of components in the GMM.
+        means (List[float]): The means of the Gaussian components.
+        standard_deviations (List[float]): The standard deviations of the Gaussian components.
+        weights (List[float]): The weights of the Gaussian components.
+
+    Methods:
+        __post_init__(): Validates and initializes the attributes of the class.
+    """
     n_samples: int
     n_components: int
     means: List[float]
@@ -11,6 +24,15 @@ class UnivariateGMMParameters:
     weights: List[float]
 
     def __post_init__(self):
+        """
+        Validates and initializes the attributes of the class.
+
+        Raises:
+            TypeError: If means, weights, or standard_deviations are not of type list.
+            ValueError: If the number of means, weights, or standard_deviations does not match the number of components.
+                        If the sum of weights is not equal to 1.
+                        If any of the standard deviations are not positive.
+        """
         if not isinstance(self.means, list):
             raise TypeError("Means must be a list")
         if len(self.means) != self.n_components:

@@ -16,7 +16,20 @@ def step_selector(
         sampler_params: Dict,
         model: pm.Model
     ) -> Union[Callable, Model]:
-    print("sampler selected:", sampler)
+    """
+    Selects and returns the appropriate step function for the given sampler type.
+
+    Args:
+        sampler (str): The type of sampler.
+        sampler_params (Dict): The parameters for the sampler.
+        model (pm.Model): The PyMC model.
+
+    Returns:
+        Union[Callable, Model]: The selected step function.
+
+    Raises:
+        ValueError: If an invalid sampler type is provided.
+    """
     if sampler == 'Metropolis':
         # default proposal distribution is Normal
         step = pm.Metropolis
@@ -35,6 +48,18 @@ def step_selector(
 def generator_selector(
         type_of_generator: str
     ) -> Callable:
+    """
+    Selects and returns the appropriate generator function for the given generator type.
+
+    Args:
+        type_of_generator (str): The type of generator.
+
+    Returns:
+        Callable: The selected generator function.
+
+    Raises:
+        ValueError: If an invalid generator type is provided.
+    """
     if type_of_generator == 'univariate':
         generator = UnivariateGaussianMixtureGenerator
     else:
