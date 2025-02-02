@@ -5,12 +5,10 @@ import warnings
 import os
 
 import arviz as az
-from dacite import from_dict, Config
-import numpy as np
+from dacite import from_dict
 import pymc as pm
 from pymc.util import get_value_vars_from_user_vars
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 from src.utils.selectors import (
@@ -32,7 +30,7 @@ from src.utils.gibbs_sampler import (
 warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--type', choices=['univariate'], 
+parser.add_argument('--type', choices=['univariate'],
                     default='univariate', help='Type of simulation: univariate or multivariate')
 parser.add_argument(
     '--sampler',
@@ -52,21 +50,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
     experiment_type = args.type
     sampler = args.sampler
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    
+
     with open('configs/experiment_params.json') as f:
         experiment_params = json.load(f)
-    
+
     with open('configs/sampler_params.json') as f:
         sampler_params = json.load(f)
 
     with open('configs/prior_params.json') as f:
         prior_params_dict = json.load(f)
-    
-    prior_params = from_dict(data_class = prior_dataclass_dict[experiment_type],
-                             data = prior_params_dict[experiment_type])
-    
+
+    prior_params = from_dict(data_class=prior_dataclass_dict[experiment_type],
+                             data=prior_params_dict[experiment_type])
+
     traceplot_dir = f"results/{timestamp}/figures"
     summary_stats_dir = f"results/{timestamp}/data"
     os.makedirs(traceplot_dir, exist_ok=True)
@@ -74,14 +72,14 @@ if __name__ == "__main__":
 
     for case_name, params in experiment_params[experiment_type].items():
         print(f"case: {case_name}, params: {params}")
-        
+
         # initialize the data generator
-        simulation_gmm_params = from_dict(data_class = dataclass_dict[experiment_type], 
-                                          data = params)
+        simulation_gmm_params = from_dict(data_class=dataclass_dict[experiment_type],
+                                          data=params)
         generator_distribtuion = generator_selector(experiment_type)
         data_generator = generator_distribtuion(simulation_gmm_params)
         sample = data_generator.generate()
-        
+
         # build the model
         model = build_model(
             experiment_type,
@@ -89,7 +87,7 @@ if __name__ == "__main__":
             prior_params,
             simulation_gmm_params
         )
-        
+
         # sample from the model
         with model:
             if sampler == 'Gibbs' and experiment_type == 'univariate':
@@ -104,15 +102,14 @@ if __name__ == "__main__":
                     tau2=prior_params.muk_variance,
                     alpha0=prior_params.sigma0_alpha,
                     beta0=prior_params.sigma0_beta
-
                 )
             else:
                 step_method = step_selector(sampler, sampler_params[sampler], model)
-            trace = pm.sample(10000, tune = 1000, chains = 4, step=step_method)
-        
+            trace = pm.sample(10000, tune=1000, chains=4, step=step_method)
+
         # plot the results
         axes = az.plot_trace(trace)
-        fig = axes[0, 0].figure 
+        fig = axes[0, 0].figure
         fig.suptitle(f"Traceplot for {case_name}", fontsize=16)
         traceplot_filename = os.path.join(f"{traceplot_dir}", f"{sampler}-{case_name}_traceplot.png")
         plt.savefig(traceplot_filename, dpi=300)
